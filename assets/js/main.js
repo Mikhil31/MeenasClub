@@ -189,6 +189,245 @@
   /* ── Print button (Terms page) ── */
   $$('[data-print]').forEach(function (b) { b.addEventListener('click', function () { window.print(); }); });
 
+  /* ── Club film: a silent teaser plays behind the doors; one tap opens the full film with sound ── */
+  $$('[data-film]').forEach(function (frame) {
+    var teaser = frame.querySelector('video');
+    var wideQ = window.matchMedia('(min-aspect-ratio:1/1)');
+    // without the scroll scene (reduced motion) the doors stay away and the play button is always there
+    var sec = frame.closest('.film');
+    function still() { sec.classList.add('film--still'); frame.classList.add('is-open', 'is-cta'); }
+    // the scroll scene runs on GSAP ScrollTrigger, fetched only as the section comes near
+    function load(src, cb) { var sc = document.createElement('script'); sc.src = src; sc.onload = cb; sc.onerror = still; document.head.appendChild(sc); }
+    function scene() {
+      var G = 'https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/';
+      var go = function () {
+        var gsap = window.gsap; gsap.registerPlugin(window.ScrollTrigger);
+        var q = function (s) { return frame.querySelector(s); }, lines = frame.querySelectorAll('.film__lines span');
+        gsap.set(q('.film__cta'), { xPercent: -50, yPercent: -50, x: 0, y: 0, left: '50%', top: '50%' });
+        var tl = gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: {
+          trigger: sec, start: 'top top', end: 'bottom bottom', scrub: 0.8,
+          onUpdate: function (st) { frame.classList.toggle('is-open', st.progress > 0.35); frame.classList.toggle('is-cta', st.progress > 0.88); }
+        } });
+        // 1. the letters swell until the film behind them fills the screen
+        tl.to(q('.film__kicker'), { autoAlpha: 0, y: -40, duration: 0.08 }, 0.02)
+          // 2D transform (no GPU layer) so phones redraw the letters sharp at every size, also on the way back up
+          .fromTo(q('.film__mask'), { scale: 1 }, { scale: 14, force3D: false, duration: 0.42, ease: 'power3.in' }, 0.04)
+          .to(q('.film__mask'), { autoAlpha: 0, duration: 0.08 }, 0.38)
+          .fromTo(q('.film__media'), { scale: 1.2 }, { scale: 1, duration: 0.5, ease: 'power1.out' }, 0.04)
+        // 2. three lines rise one by one, then make way for the play button
+          .to(q('.film__shade'), { opacity: 0.85, duration: 0.1 }, 0.48);
+        for (var i = 0; i < lines.length; i++) tl.fromTo(lines[i], { autoAlpha: 0, y: 50, filter: 'blur(8px)' }, { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.08, ease: 'power2.out' }, 0.5 + i * 0.08);
+        tl.to(lines, { autoAlpha: 0, y: -40, duration: 0.06, stagger: 0.01 }, 0.8)
+          .to(q('.film__shade'), { opacity: 0.45, duration: 0.06 }, 0.82)
+          .fromTo(q('.film__cta'), { autoAlpha: 0, scale: 0.7 }, { autoAlpha: 1, scale: 1, duration: 0.08, ease: 'back.out(1.6)' }, 0.86);
+      };
+      load(G + 'gsap.min.js', function () { load(G + 'ScrollTrigger.min.js', go); });
+    }
+    if (reduce || !hasIO) still();
+    else { var near = new IntersectionObserver(function (en) { if (en[0].isIntersecting) { near.disconnect(); scene(); } }, { rootMargin: '1200px 0px' }); near.observe(sec); }
+    var phonePoster = teaser.getAttribute('poster');
+    var autoplay = !reduce && !lite, seen = false;
+    function teaserSrc() {
+      var w = wideQ.matches;
+      teaser.poster = w ? teaser.getAttribute('data-poster-wide') : phonePoster;
+      return teaser.getAttribute(w ? 'data-wide' : 'data-phone');
+    }
+    function playTeaser() {
+      if (!autoplay || !seen || (fp && fp.classList.contains('is-open'))) return;
+      var s = teaserSrc();
+      if (teaser.getAttribute('src') !== s) teaser.src = s;
+      var p = teaser.play();
+      if (p && p.catch) p.catch(function () {});
+    }
+    teaserSrc();
+    if (wideQ.addEventListener) wideQ.addEventListener('change', playTeaser);
+    if (hasIO) new IntersectionObserver(function (en) {
+      seen = en[0].isIntersecting;
+      if (seen) playTeaser(); else teaser.pause();
+    }, { threshold: 0.2 }).observe(frame);
+
+    var I = {
+      play: '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',
+      pause: '<svg viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>',
+      vol: '<svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 010 7M18 6a8.5 8.5 0 010 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+      mute: '<svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+      fs: '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>',
+      fsx: '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>',
+      x: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+      again: '<svg viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 102.2-5.3M4.5 4.5v4h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+      turn: '<svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.5"/></svg>'
+    };
+    var fp, fv, stage, seek, done, buf, thumb, time, pp, mute, fsb, flash, idleT, lastFocus, dragging = false, raf = 0;
+    var base = document.body.getAttribute('data-base') || '';
+    var fmt = function (s) { s = Math.max(0, Math.floor(s || 0)); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); };
+    var overlayQ = window.matchMedia('(orientation:landscape) and (max-height:560px),(min-width:821px)');
+    var fsEl = function () { return document.fullscreenElement || document.webkitFullscreenElement; };
+
+    function build() {
+      fp = document.createElement('div');
+      fp.className = 'fp'; fp.setAttribute('role', 'dialog'); fp.setAttribute('aria-modal', 'true'); fp.setAttribute('aria-label', 'Club film');
+      fp.innerHTML = '<div class="fp__top"><p class="fp__title">Meenaa’s Club · The film</p><button class="fp__x" type="button" aria-label="Close film">' + I.x + '</button></div>' +
+        '<div class="fp__stage"><video playsinline preload="auto"></video><span class="fp__flash"></span><span class="fp__spin"></span>' +
+        '<div class="fp__end"><p class="kicker center">Thank you for watching</p><h3>Your seat at the <em>table</em> awaits</h3><div class="btns">' +
+        '<button class="fp__again" type="button">' + I.again + 'Watch again</button>' +
+        '<a class="btn btn--sm" href="' + base + 'contact/#enquire"><span class="btn__label"><span>Enquire now</span></span></a></div></div></div>' +
+        '<p class="fp__turn">' + I.turn + 'Turn your phone for full screen</p>' +
+        '<div class="fp__bar"><div class="fp__seek" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0"><i><b class="fp__buf"></b><b class="fp__done"></b></i><u></u></div>' +
+        '<div class="fp__row"><button class="fp__pp" type="button" aria-label="Pause">' + I.pause + '</button><p class="fp__time">0:00 / 0:00</p><span class="fp__sp"></span>' +
+        '<button class="fp__mute" type="button" aria-label="Mute">' + I.vol + '</button><button class="fp__fs" type="button" aria-label="Full screen">' + I.fs + '</button></div></div>';
+      document.body.appendChild(fp);
+      var q = function (s) { return fp.querySelector(s); };
+      fv = q('video'); stage = q('.fp__stage'); seek = q('.fp__seek'); done = q('.fp__done'); buf = q('.fp__buf'); thumb = q('.fp__seek u');
+      time = q('.fp__time'); pp = q('.fp__pp'); mute = q('.fp__mute'); fsb = q('.fp__fs'); flash = q('.fp__flash');
+
+      function paint() {
+        var d = fv.duration || 0, r = d ? fv.currentTime / d : 0;
+        done.style.transform = 'scaleX(' + r + ')';
+        thumb.style.left = (r * 100) + '%';
+        time.textContent = fmt(fv.currentTime) + ' / ' + fmt(d);
+        seek.setAttribute('aria-valuemax', Math.round(d)); seek.setAttribute('aria-valuenow', Math.round(fv.currentTime));
+        seek.setAttribute('aria-valuetext', fmt(fv.currentTime) + ' of ' + fmt(d));
+      }
+      function loop() { paint(); raf = !fv.paused && fp.classList.contains('is-open') ? requestAnimationFrame(loop) : 0; }
+      fv.addEventListener('play', function () {
+        pp.innerHTML = I.pause; pp.setAttribute('aria-label', 'Pause'); fp.classList.remove('is-ended');
+        if (!raf) raf = requestAnimationFrame(loop); wake();
+      });
+      fv.addEventListener('pause', function () { pp.innerHTML = I.play; pp.setAttribute('aria-label', 'Play'); wake(); paint(); });
+      fv.addEventListener('timeupdate', function () { if (!raf) paint(); });
+      fv.addEventListener('loadedmetadata', paint);
+      fv.addEventListener('progress', function () {
+        if (fv.buffered.length && fv.duration) buf.style.transform = 'scaleX(' + fv.buffered.end(fv.buffered.length - 1) / fv.duration + ')';
+      });
+      fv.addEventListener('waiting', function () { fp.classList.add('is-wait'); });
+      ['playing', 'canplay', 'pause'].forEach(function (e) { fv.addEventListener(e, function () { fp.classList.remove('is-wait'); }); });
+      fv.addEventListener('ended', function () { fp.classList.add('is-ended'); fp.classList.remove('is-idle'); exitFs(); });
+      fv.addEventListener('volumechange', function () {
+        mute.innerHTML = fv.muted ? I.mute : I.vol; mute.setAttribute('aria-label', fv.muted ? 'Unmute' : 'Mute');
+      });
+
+      function blink(icon) { flash.innerHTML = icon; flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go'); }
+      function toggle() { if (fv.paused || fv.ended) { fv.play(); blink(I.play); } else { fv.pause(); blink(I.pause); } }
+      pp.addEventListener('click', toggle);
+      mute.addEventListener('click', function () { fv.muted = !fv.muted; });
+      q('.fp__x').addEventListener('click', function () { close(); });
+      q('.fp__again').addEventListener('click', function () { fv.currentTime = 0; fv.play(); });
+
+      // touch: a tap on a hidden-controls film only brings the controls back; mouse: a click plays/pauses
+      var touchTap = false;
+      stage.addEventListener('pointerdown', function (e) { touchTap = e.pointerType !== 'mouse' && fp.classList.contains('is-idle'); });
+      stage.addEventListener('click', function (e) {
+        if (e.target.closest('.fp__end')) return;
+        if (touchTap) { wake(); return; }
+        toggle();
+      });
+
+      // full screen: the whole player on Android / desktop (turned sideways where allowed), the native player on iPhone
+      fsb.addEventListener('click', function () {
+        if (fsEl()) { exitFs(); return; }
+        var req = fp.requestFullscreen || fp.webkitRequestFullscreen;
+        if (req) {
+          var p = req.call(fp);
+          var lock = function () { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {}); };
+          if (p && p.then) p.then(lock).catch(function () {}); else lock();
+        } else if (fv.webkitEnterFullscreen) fv.webkitEnterFullscreen();
+      });
+      ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+        document.addEventListener(ev, function () {
+          var on = !!fsEl(); fsb.innerHTML = on ? I.fsx : I.fs; fsb.setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen');
+        });
+      });
+
+      // seeking: drag anywhere on the bar, or arrow keys
+      function seekTo(e) {
+        var r = seek.getBoundingClientRect();
+        var x = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
+        if (fv.duration) { fv.currentTime = x * fv.duration; paint(); }
+      }
+      seek.addEventListener('pointerdown', function (e) { dragging = true; if (seek.setPointerCapture) seek.setPointerCapture(e.pointerId); seekTo(e); wake(); });
+      seek.addEventListener('pointermove', function (e) { if (dragging) seekTo(e); });
+      ['pointerup', 'pointercancel'].forEach(function (ev) { seek.addEventListener(ev, function () { dragging = false; }); });
+
+      // swipe down to close, like a photo viewer
+      var sy = null, dy = 0;
+      stage.addEventListener('touchstart', function (e) { if (e.touches.length === 1 && !fsEl()) { sy = e.touches[0].clientY; dy = 0; } }, { passive: true });
+      stage.addEventListener('touchmove', function (e) {
+        if (sy === null) return;
+        dy = Math.max(0, e.touches[0].clientY - sy);
+        stage.classList.add('is-drag');
+        stage.style.transform = 'translate3d(0,' + dy + 'px,0) scale(' + (1 - Math.min(dy, 400) / 2000) + ')';
+        fp.style.backgroundColor = 'rgba(0,0,0,' + (1 - Math.min(dy, 400) / 600) + ')';
+      }, { passive: true });
+      stage.addEventListener('touchend', function () {
+        if (sy === null) return;
+        sy = null; stage.classList.remove('is-drag');
+        if (dy > 110) { close(); setTimeout(reset, 450); } else reset();
+      });
+      function reset() { stage.style.transform = ''; fp.style.backgroundColor = ''; }
+
+      fp.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') wake(); });
+      document.addEventListener('keydown', function (e) {
+        if (!fp.classList.contains('is-open')) return;
+        var k = e.key;
+        if (k === 'Escape') { if (!fsEl()) close(); }
+        else if ((k === ' ' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'A') || k === 'k') { e.preventDefault(); toggle(); }
+        else if (k === 'ArrowRight' || k === 'ArrowLeft') { e.preventDefault(); fv.currentTime += k === 'ArrowRight' ? 5 : -5; wake(); }
+        else if (k === 'm') fv.muted = !fv.muted;
+        else if (k === 'f') fsb.click();
+        else if (k === 'Tab') {  // keep focus inside the player
+          var f = $$('.fp button, .fp a, .fp [tabindex="0"]').filter(function (el) { return el.offsetParent !== null; });
+          if (!f.length) return;
+          if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+          else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+        }
+      });
+      // the phone's back button closes the film instead of leaving the page
+      window.addEventListener('popstate', function () { if (fp.classList.contains('is-open')) close(true); });
+    }
+
+    // controls fade away while the film plays full-frame (sideways phone, desktop); upright phones keep them
+    function wake() {
+      fp.classList.remove('is-idle'); clearTimeout(idleT);
+      if (!fv.paused && !dragging) idleT = setTimeout(function () { if (!fv.paused && overlayQ.matches) fp.classList.add('is-idle'); }, 2600);
+    }
+    function exitFs() {
+      if (!fsEl()) return;
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    }
+
+    function open() {
+      if (!fp) build();
+      lastFocus = document.activeElement;
+      if (!fv.getAttribute('src')) {
+        var big = !lite && window.innerWidth >= 900 && window.screen.width * (window.devicePixelRatio || 1) >= 1600;
+        fv.src = frame.getAttribute(big ? 'data-src-hd' : 'data-src');
+        fp.classList.add('is-wait');
+      }
+      teaser.pause();
+      fp.classList.add('is-open'); doc.classList.add('lb-open');
+      if (lenis) lenis.stop();
+      if (fv.ended) fv.currentTime = 0;
+      fv.muted = false;
+      var p = fv.play();  // inside the tap, so sound is allowed
+      if (p && p.catch) p.catch(function () { fp.classList.remove('is-wait'); });
+      history.pushState({ film: 1 }, '');
+      fp.querySelector('.fp__x').focus({ preventScroll: true });
+      wake();
+    }
+    function close(fromBack) {
+      fv.pause(); exitFs();
+      if (screen.orientation && screen.orientation.unlock) try { screen.orientation.unlock(); } catch (e) {}
+      fp.classList.remove('is-open', 'is-idle'); doc.classList.remove('lb-open');
+      if (lenis) lenis.start();
+      if (!fromBack && history.state && history.state.film) history.back();
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+      playTeaser();
+    }
+    frame.addEventListener('click', function (e) {
+      if (frame.classList.contains('is-open') || e.target.closest('.film__cta')) open();
+    });
+  });
+
   /* ── Gallery: album filter + lightbox (tap, arrows, swipe, Esc) ── */
   var gal = document.querySelector('.gal');
   if (gal) {

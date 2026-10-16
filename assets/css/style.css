@@ -839,3 +839,93 @@ html.lb-open{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.fsel__pop{transition:opacity .2s,visibility .2s}}
 /* grid/flex children may shrink below their content (long dropdown values never widen the form) */
 .split>*,.form,.fsel,.fsel__btn{min-width:0}
+
+/* ───────── Club film: the palace doors open as you scroll, the film plays behind them ───────── */
+.film{position:relative;height:320vh;height:320svh;background:#fff}
+.film__pin{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
+.film__stage{position:absolute;inset:0;color:var(--ivory);isolation:isolate;-webkit-tap-highlight-color:transparent}
+.film__stage.is-open{cursor:pointer}
+.film__media{position:absolute;inset:0;transform:scale(1.2);will-change:transform}
+.film__teaser{width:100%;height:100%;object-fit:cover;display:block;background:var(--navy-950) center/cover}
+.film__shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,10,23,.35),rgba(5,10,23,.55) 50%,rgba(5,10,23,.7));opacity:0}
+.film__lines{position:absolute;left:var(--gut);right:var(--gut);top:50%;transform:translateY(-50%);margin:0;display:grid;gap:.1em;text-align:center;font-family:var(--serif);font-size:clamp(2.4rem,9vw,6rem);line-height:1.05;text-shadow:0 4px 30px rgba(0,0,0,.45)}
+.film__lines span{opacity:0;display:block}
+.film__lines em{color:var(--gold-l)}
+.film__cta{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:1.1rem;background:none;border:0;padding:0;color:var(--ivory);cursor:pointer;opacity:0;pointer-events:none}
+.film__stage.is-cta .film__cta{pointer-events:auto}
+.film__cta-t{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-l)}
+.film__play{position:relative;width:clamp(124px,34vw,170px);aspect-ratio:1;display:grid;place-items:center}
+.film__play::before{content:"";position:absolute;inset:-6%;border-radius:50%;background:radial-gradient(closest-side,rgba(5,10,23,.55),rgba(5,10,23,.3) 70%,transparent)}
+.film__ring{position:absolute;inset:0;width:100%;height:100%;animation:filmspin 22s linear infinite}
+.film__ring text{font-family:var(--mono);font-size:8px;fill:var(--gold-l)}
+.film__play i{position:relative;width:44%;aspect-ratio:1;border-radius:50%;background:var(--gold-grad);color:var(--navy-900);display:grid;place-items:center;animation:filmpulse 2.6s var(--ease-io) infinite;transition:transform .5s var(--ease)}
+.film__play i svg{width:42%;margin-left:8%}
+.film__cta:hover .film__play i,.film__cta:focus-visible .film__play i{transform:scale(1.12)}
+
+/* the film plays inside the letters: an ivory sheet with black type, screen-blended over the video */
+.film__mask{position:absolute;inset:-2px;background:rgba(255,255,255,.8);mix-blend-mode:screen;display:grid;place-content:center;justify-items:center;text-align:center;
+  color:#000;font-family:var(--display);font-weight:700;font-size:clamp(3.4rem,16.5vw,22rem);line-height:.88;text-transform:uppercase;pointer-events:none}
+.film__mask span{display:block}
+@media (min-aspect-ratio:1/1){.film__mask{grid-auto-flow:column;gap:.22em;font-size:min(7vw,22vh)}}
+.film__kicker{position:absolute;left:0;right:0;top:calc(50% - 16.5vw - 2.8rem);justify-content:center;color:var(--navy-800);margin:0;pointer-events:none}
+@media (min-aspect-ratio:1/1){.film__kicker{top:calc(50% - min(7vw,22vh) * .5 - 2.6rem)}}
+@keyframes filmspin{to{transform:rotate(360deg)}}
+@keyframes filmpulse{0%{box-shadow:0 0 0 0 rgba(212,175,55,.5)}70%,100%{box-shadow:0 0 0 22px rgba(212,175,55,0)}}
+
+/* no script / reduced motion: no doors, no pinning — the film card just sits there with its play button */
+.no-js .film,.film--still{height:auto}
+.no-js .film__pin,.film--still .film__pin{position:relative;height:auto;aspect-ratio:9/16;max-height:100svh}
+.no-js .film__mask,.no-js .film__kicker,.film--still .film__mask,.film--still .film__kicker{display:none}
+.no-js .film__cta,.film--still .film__cta{opacity:1;pointer-events:auto}
+.film--still .film__media{transform:none}
+@media (min-aspect-ratio:1/1){.no-js .film__pin,.film--still .film__pin{aspect-ratio:16/9}}
+@media (prefers-reduced-motion:reduce){.film__ring,.film__play i{animation:none}}
+
+.fp{position:fixed;inset:0;z-index:160;background:#000;color:var(--ivory);display:grid;grid-template-rows:auto 1fr auto;opacity:0;visibility:hidden;transition:opacity .45s,visibility .45s;touch-action:none;-webkit-user-select:none;user-select:none}
+.fp.is-open{opacity:1;visibility:visible}
+.fp button{background:none;border:0;color:inherit;cursor:pointer;display:grid;place-items:center;width:48px;height:48px;padding:0;-webkit-tap-highlight-color:transparent}
+.fp button svg{width:24px;height:24px}
+.fp__top{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:max(.5rem,env(safe-area-inset-top)) max(.5rem,env(safe-area-inset-right)) .5rem max(1.2rem,env(safe-area-inset-left));z-index:2;transition:opacity .4s}
+.fp__title{font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-l);margin:0}
+.fp .fp__x{border:1px solid rgba(241,212,137,.4);border-radius:50%}
+.fp__stage{position:relative;display:grid;place-items:center;min-height:0;overflow:hidden;transition:transform .45s var(--ease)}
+.fp__stage.is-drag{transition:none}
+.fp video{width:100%;height:100%;max-height:100%;object-fit:contain;background:#000;display:block}
+.fp__flash{position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px;border-radius:50%;background:rgba(5,10,23,.55);display:grid;place-items:center;opacity:0;transform:scale(.7);pointer-events:none}
+.fp__flash svg{width:30px;height:30px;color:var(--gold-l)}
+.fp__flash.go{animation:fpflash .7s var(--ease)}
+@keyframes fpflash{30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.25)}}
+.fp__spin{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px;border:2px solid rgba(241,212,137,.25);border-top-color:var(--gold);border-radius:50%;animation:filmspin .9s linear infinite;opacity:0;transition:opacity .3s;pointer-events:none}
+.fp.is-wait .fp__spin{opacity:1}
+.fp__turn{display:none;align-items:center;justify-content:center;gap:.7rem;margin:0;padding:.4rem 1rem 0;font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.fp__turn svg{width:22px;height:22px;color:var(--gold-l);animation:fpturn 3s var(--ease-io) infinite}
+@keyframes fpturn{0%,30%{transform:rotate(0)}55%,85%{transform:rotate(-90deg)}100%{transform:rotate(0)}}
+.fp__bar{padding:.4rem max(.6rem,env(safe-area-inset-right)) max(.6rem,env(safe-area-inset-bottom)) max(.6rem,env(safe-area-inset-left));z-index:2;transition:opacity .4s}
+.fp__seek{position:relative;height:36px;margin:0 .9rem;cursor:pointer;touch-action:none}
+.fp__seek i{position:absolute;left:0;right:0;top:50%;height:3px;margin-top:-1.5px;background:rgba(236,230,214,.2);border-radius:2px;overflow:hidden}
+.fp__seek i b{position:absolute;inset:0;transform-origin:left;transform:scaleX(0)}
+.fp__seek .fp__buf{background:rgba(236,230,214,.28)}
+.fp__seek .fp__done{background:var(--gold)}
+.fp__seek u{position:absolute;top:50%;left:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--gold-l);box-shadow:0 0 0 5px rgba(212,175,55,.2)}
+.fp__row{display:flex;align-items:center;gap:.2rem}
+.fp__time{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;color:var(--txt);margin:0 0 0 .4rem;font-variant-numeric:tabular-nums}
+.fp__sp{flex:1}
+.fp__end{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:1.1rem;text-align:center;padding:1.5rem;background:rgba(5,10,23,.82);opacity:0;visibility:hidden;transition:opacity .5s,visibility .5s}
+.fp.is-ended .fp__end{opacity:1;visibility:visible}
+.fp__end h3{font-size:clamp(1.6rem,6vw,2.6rem);margin:0}
+.fp__end h3 em{color:var(--gold)}
+.fp__end .btns{display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center}
+.fp .fp__again{width:auto;height:auto;font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;gap:.5rem;display:inline-flex;padding:.9rem 1.1rem;border:1px solid rgba(241,212,137,.5);border-radius:2px}
+.fp .fp__again svg{width:16px;height:16px}
+/* upright phone: film in the middle, big controls below, and a nudge to turn the phone */
+@media (orientation:portrait) and (max-width:820px){.fp__turn{display:flex}}
+/* sideways phone or desktop: the film takes the whole screen and the controls float over it */
+@media (orientation:landscape) and (max-height:560px),(min-width:821px){
+  .fp{grid-template-rows:1fr}
+  .fp__top,.fp__bar{position:absolute;left:0;right:0}
+  .fp__top{top:0;background:linear-gradient(rgba(0,0,0,.6),transparent)}
+  .fp__bar{bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+  .fp__stage{grid-row:1;height:100%}
+}
+.fp.is-idle .fp__top,.fp.is-idle .fp__bar{opacity:0}
+.fp.is-idle{cursor:none}
