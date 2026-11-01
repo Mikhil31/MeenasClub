@@ -929,3 +929,28 @@ html.lb-open{overflow:hidden}
 }
 .fp.is-idle .fp__top,.fp.is-idle .fp__bar{opacity:0}
 .fp.is-idle{cursor:none}
+
+/* Campus curve gallery (Branches) — 3D scene in assets/js/curve-gallery.js; without it, a swipeable photo strip */
+.cg{padding-top:clamp(4.5rem,11vw,9rem)}
+.cg__head{margin-bottom:clamp(2rem,4vw,3rem)}
+.cg__track,.cg__pin{display:none}
+.cg__list{list-style:none;display:flex;gap:clamp(.8rem,2vw,1.4rem);overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:1rem;-webkit-overflow-scrolling:touch}
+.cg__list li{flex:0 0 min(85%,560px);scroll-snap-align:start}
+.cg__list img{width:100%;height:auto;aspect-ratio:1280/898;object-fit:cover;background:var(--navy-800)}
+.cg__list figure{margin:0}
+.cg__list figcaption,.cg__fnote{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:.8rem}
+.cg__fnote{padding-bottom:clamp(4.5rem,11vw,9rem);margin:0}
+.cg--3d .cg__track{display:block;position:relative;height:calc(var(--n,5)*75vh + 100vh);height:calc(var(--n,5)*75svh + 100svh)}
+.cg--3d .cg__pin{display:block;position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;background:var(--navy-900)}
+.cg--3d .cg__list{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cg--3d .cg__fnote{display:none}
+.cg__stage,.cg__stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cg__stage canvas{opacity:0;transition:opacity 1.2s var(--ease)}
+.cg--ready .cg__stage canvas{opacity:1}
+.cg__ui{position:absolute;left:var(--gut);right:var(--gut);bottom:clamp(1.2rem,4vh,2.4rem);display:grid;grid-template-columns:1fr auto;align-items:end;gap:.6rem 1.5rem;pointer-events:none}
+.cg__cap{margin:0;display:grid;gap:.35rem}
+.cg__num{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;color:var(--gold)}
+.cg__txt{font-family:var(--serif);font-size:clamp(1.25rem,2.6vw,2rem);line-height:1.15;color:var(--ivory)}
+.cg__note{margin:0;font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.cg__bar{grid-column:1/-1;height:1px;background:var(--line-d);overflow:hidden}
+.cg__bar i{display:block;height:100%;background:var(--gold);transform:scaleX(0);transform-origin:left}
