@@ -122,6 +122,31 @@
       return mesh;
     });
 
+    // Background fill, as in the original demo's field of small photos: smaller, dimmer copies of the
+    // same photos float further back around the path, so the edges of the screen are never empty.
+    // They keep one fixed size each (no zooming) and always sit behind the main photos.
+    // A fixed seed places them identically on every device.
+    var seed = 7;
+    function rand() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+    var PER_PHOTO = 3;
+    var dust = [];
+    for (var k = 0; k < (N + 1) * PER_PHOTO; k++) {
+      var src = planes[k % N];
+      var ang = rand() * Math.PI * 2;
+      var dm = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: src.material.map, color: 0x8a90a0, side: THREE.DoubleSide, depthTest: false, depthWrite: false }));
+      dm.userData = {
+        k: k / PER_PHOTO - 0.5,                // where along the path (in photos)
+        ox: Math.cos(ang), oy: Math.sin(ang),  // which way out from the centre
+        r: 0.5 + rand() * 0.55,                // how far out, as a share of the visible half-screen
+        dz: -(6 + rand() * 14),                // how far behind the main photos
+        s: 0.2 + rand() * 0.16,                // size, as a share of a main photo
+        aspect: src.userData.aspect, ph: rand() * 20, base: new THREE.Vector3()
+      };
+      dm.renderOrder = -100000 + Math.round(dm.userData.dz * 10); // farthest first, all behind the main photos
+      scene.add(dm);
+      dust.push(dm);
+    }
+
     // Size every photo once from the viewport: the photo in front of the camera fills a set share
     // of the screen without cropping or stretching, and all photos share that one size.
     function resize() {
@@ -143,6 +168,18 @@
       // neighbours sit a little more than one photo apart, so the next one is always in view as you travel
       gap = widest * 1.4;
       planes.forEach(function (m, i) { m.userData.base.copy(pathAt(i)); });
+      var tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+      dust.forEach(function (m) {
+        var u = m.userData, dist = CAM_Z - u.dz;
+        var halfH = dist * tanH, halfW = halfH * camera.aspect;
+        var pw = widest * u.s;
+        m.scale.set(pw, pw / u.aspect, 1);
+        u.amp = pw / u.aspect * 0.06;
+        u.base.copy(pathAt(u.k));
+        u.base.x += u.ox * u.r * halfW;
+        u.base.y += u.oy * u.r * halfH;
+        u.base.z += u.dz;
+      });
     }
     resize();
     if ('ResizeObserver' in window) new ResizeObserver(resize).observe(pin); else window.addEventListener('resize', resize);
@@ -197,6 +234,8 @@
       planes.forEach(function (m, i) {
         // the photo nearest the camera is always drawn on top, so neighbours never cover it
         m.renderOrder = -Math.round(Math.abs(i - t) * 100);
+      });
+      planes.concat(dust).forEach(function (m) {
         var u = m.userData, b = u.base, a = u.amp || 0, ph = u.ph;
         // idle float: a slow drift and a slight sway
         m.position.set(
